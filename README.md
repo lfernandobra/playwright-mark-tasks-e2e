@@ -21,6 +21,7 @@ udemy-playwright-express/
 ## ⚙️ Pré-requisitos
 
 Antes de começar, garante que tens instalado na tua máquina:
+
 - **Node.js**: versão `v18.x` ou superior (testado com Node.js v24)
 - **npm**: gerenciador de pacotes padrão do Node.js
 
@@ -43,16 +44,19 @@ cd /Users/lfernandobra/Documents/GitHub/udemy-playwright-express
 A API gerencia a persistência das tarefas utilizando SQLite e TypeORM na porta `3333`.
 
 1. Acesse o diretório da API:
+
    ```bash
    cd app/api
    ```
 
 2. Instale as dependências:
+
    ```bash
    npm install
    ```
 
 3. Inicialize o banco de dados SQLite (executa as migrações do TypeORM):
+
    ```bash
    npm run db:init
    ```
@@ -70,11 +74,13 @@ A API gerencia a persistência das tarefas utilizando SQLite e TypeORM na porta 
 O Frontend é a interface gráfica onde as tarefas são visualizadas e gerenciadas na porta `8080`.
 
 1. Em um novo terminal, acesse o diretório web:
+
    ```bash
    cd app/web
    ```
 
 2. Instale as dependências:
+
    ```bash
    npm install
    ```
@@ -92,21 +98,25 @@ O Frontend é a interface gráfica onde as tarefas são visualizadas e gerenciad
 Com a API e o Web rodando, abra um novo terminal na **raiz do projeto** para rodar a suíte de testes E2E.
 
 1. Instale as dependências da raiz (Playwright):
+
    ```bash
    npm install
    ```
 
 2. Instale os navegadores do Playwright (Chromium, Firefox, WebKit):
+
    ```bash
    npx playwright install
    ```
 
 3. Executar os testes em modo headless:
+
    ```bash
    npx playwright test
    ```
 
 4. Executar os testes com a Interface Gráfica interativa do Playwright (UI Mode):
+
    ```bash
    npx playwright test --ui
    ```
@@ -121,11 +131,13 @@ Com a API e o Web rodando, abra um novo terminal na **raiz do projeto** para rod
 ## 🛠️ Scripts Úteis
 
 ### API (`app/api`)
+
 - `npm run dev` - Inicia a API na porta 3333.
 - `npm run db:init` - Roda as migrations do banco de dados SQLite.
 - `npm run db:drop` - Apaga/reseta o schema do banco de dados.
 
 ### Web (`app/web`)
+
 - `npm run dev` ou `npm start` - Servidor HTTP estático na porta 8080.
 
 ---
@@ -133,3 +145,7 @@ Com a API e o Web rodando, abra um novo terminal na **raiz do projeto** para rod
 ## 💡 Observações & Solução de Problemas
 
 - **Erro de Bindings do `better-sqlite3`**: Se ao rodar `npm run db:init` você receber um erro referente ao `better-sqlite3`, certifique-se de que instalou a versão compatível com a versão do Node.js em uso rodando `npm install better-sqlite3@latest` na pasta `app/api`.
+
+## Modo debug
+
+- `yarn playwright test --debug` executa no modo debug
