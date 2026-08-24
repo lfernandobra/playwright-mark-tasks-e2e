@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 /**
  * Read environment variables from file.
@@ -38,6 +38,7 @@ export default defineConfig({
     trace: "on-first-retry",
     headless: true,
     baseURL: process.env.BASE_URL,
+    screenshot: "only-on-failure",
   },
 
   /* Configure projects for major browsers */

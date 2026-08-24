@@ -30,6 +30,7 @@ test.describe("cadastro", () => {
     await tasksPage.go();
     await tasksPage.create(task);
     await tasksPage.alertHaveText("Task already exists!");
+    // await tasksPage.alertHaveText("Task is duplicate!");
   });
 
   test("campo obrigatório", async ({ page }) => {

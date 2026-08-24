@@ -1,6 +1,6 @@
 import { expect, APIRequestContext } from "@playwright/test";
 import { TaskModel } from "../fixtures/task.model";
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const BASE_API = process.env.BASE_API;
 
