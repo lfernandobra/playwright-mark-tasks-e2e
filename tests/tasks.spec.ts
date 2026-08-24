@@ -1,28 +1,76 @@
 import { test, expect } from "@playwright/test";
+import { TaskModel } from "./fixtures/task.model";
+import { deleteTaskByHelper, postTask } from "./support/helpers";
+import { TasksPage } from "./support/pages/tasks";
+import data from "./fixtures/tasks.json";
 
-test("deve poder cadastrar uma nova tarefa", async ({ page, request }) => {
-  // Dado que eu tenho uma nova tarefa
-  const taskName = "Ler um livro de Typescript";
-  await request.delete(`http://localhost:3333/helper/tasks/${taskName}`);
+test.describe("cadastro", () => {
+  test("deve poder cadastrar uma nova tarefa", async ({ page, request }) => {
+    const task = data.success as TaskModel;
 
-  // E que eu estou na página de cadastro
-  await page.goto("http://localhost:8080");
+    await deleteTaskByHelper(request, task.name);
 
-  // Quando faço o cadastro dessa tarefa
-  const inputTaskName = page.locator("input[class*=InputNewTask]");
-  await inputTaskName.fill("Ler um livro de Typescript");
-  await page.click("css=button >> text=Create");
+    const tasksPage: TasksPage = new TasksPage(page);
 
-  // Então essa tarefa deve ser exibida na lista
-  // por testId
-  //const target = page.getByTestId("task-item");
-  // por class
-  //const target = page.locator(".task-item");
-  // por xPath
-  //const target = page.locator("div[class*=listItem]");
-  // selector css combinado com estrategia de localizacao por texto
-  const target = page.locator(`css=.task-item p >> text=${taskName}`);
+    await tasksPage.go();
+    await tasksPage.create(task);
+    await tasksPage.shouldHaveText(task.name);
+  });
 
-  //await expect(target).toHaveText(taskName);
-  await expect(target).toBeVisible();
+  test("não deve permitir tarefa duplicada", async ({ page, request }) => {
+    const task = data.duplicate as TaskModel;
+
+    await deleteTaskByHelper(request, task.name);
+    await postTask(request, task);
+
+    const tasksPage: TasksPage = new TasksPage(page);
+
+    await tasksPage.go();
+    await tasksPage.create(task);
+    await tasksPage.alertHaveText("Task already exists!");
+  });
+
+  test("campo obrigatório", async ({ page }) => {
+    const task = data.required as TaskModel;
+
+    const tasksPage: TasksPage = new TasksPage(page);
+
+    await tasksPage.go();
+    await tasksPage.create(task);
+
+    const validationMessage = await tasksPage.inputTaskName.evaluate(
+      (e) => (e as HTMLInputElement).validationMessage,
+    );
+    expect(validationMessage).toEqual("This is a required field");
+  });
+});
+
+test.describe("atualização", () => {
+  test("deve concluir uma tarefa", async ({ page, request }) => {
+    const task = data.update as TaskModel;
+
+    await deleteTaskByHelper(request, task.name);
+    await postTask(request, task);
+
+    const tasksPage: TasksPage = new TasksPage(page);
+
+    await tasksPage.go();
+    await tasksPage.toggle(task.name);
+    await tasksPage.shouldBeDone(task.name);
+  });
+});
+
+test.describe("exclusão", () => {
+  test("deve excluir uma tarefa", async ({ page, request }) => {
+    const task = data.delete as TaskModel;
+
+    await deleteTaskByHelper(request, task.name);
+    await postTask(request, task);
+
+    const tasksPage: TasksPage = new TasksPage(page);
+
+    await tasksPage.go();
+    await tasksPage.remove(task.name);
+    await tasksPage.shouldNotExist(task.name);
+  });
 });
