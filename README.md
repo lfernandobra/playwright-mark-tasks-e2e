@@ -1,151 +1,211 @@
-# Mark - Gerenciador de Tarefas (API, Web & Testes E2E com Playwright)
+# 📝 Mark Tasks — Testes E2E com Playwright & TypeScript
 
-Este repositório contém uma aplicação completa de gerenciamento de tarefas ("Mark") desenvolvida para estudo e prática de automação de testes End-to-End (E2E) com **Playwright**.
+[![Playwright Tests](https://img.shields.io/badge/Playwright-v1.62.1-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+
+Repositório com uma aplicação completa de gerenciamento de tarefas (**Mark Tasks**) e uma suíte profissional de testes automatizados **End-to-End (E2E)** construída com **Playwright** e **TypeScript**, aplicando padrões arquiteturais avançados para automação de testes de alta confiabilidade.
 
 ---
 
-## 📁 Estrutura do Projeto
+## 🎯 Destaques e Boas Práticas da Automação
+
+- **Page Object Model (POM)**: Estrutura desacoplada onde elementos e ações de tela ficam centralizados na classe `TasksPage`, aumentando a manutenibilidade e legibilidade dos testes.
+- **Testes Híbridos (API + UI)**: Utilização do `APIRequestContext` do Playwright para preparar o estado do banco (exclusão e cadastro prévio de tarefas via API) antes da interação na interface web, garantindo independência e alta velocidade de execução.
+- **Fixtures & Dados Tipados**: Separação clara de massa de dados em JSON (`tasks.json`) e tipagem com contratos TypeScript (`TaskModel`).
+- **Execução Paralela Multi-Browser & Responsiva**: Testes executados simultaneamente em navegadores desktop (**Chromium, Firefox, WebKit/Safari**) e emuladores mobile (**Mobile Chrome / Pixel 5**, **Mobile Safari / iPhone 12**).
+- **Observabilidade Completa**: Captura automática de screenshots em caso de falhas (`only-on-failure`), gravação de traces para debug (`on-first-retry`) e relatórios interativos em HTML.
+- **Gerenciamento de Ambientes**: Variáveis de ambiente centralizadas com `dotenv` e URLs parametrizáveis.
+
+---
+
+## 📁 Estrutura do Repositório
 
 ```text
 udemy-playwright-express/
 ├── app/
-│   ├── api/       # Backend Node.js (Express + TypeORM + SQLite) - Porta 3333
-│   └── web/       # Frontend Web (Interface gráfica servida com http-server) - Porta 8080
-├── tests/         # Suíte de testes automatizados E2E com Playwright
-├── playwright.config.ts
-└── package.json   # Dependências raiz do Playwright
+│   ├── api/                    # Backend Node.js (Express + TypeORM + SQLite) - Porta 3333
+│   │   ├── src/                # Controllers, Models, Migrations e Servidor
+│   │   └── ormconfig.json      # Configuração do banco de dados SQLite
+│   └── web/                    # Frontend Web (HTML5/CSS3/Vanilla JS) - Porta 8080
+│       ├── assets/             # Estilos, scripts e imagens da interface
+│       └── index.html          # Página principal da aplicação
+├── tests/                      # Suíte de Testes Automatizados E2E
+│   ├── fixtures/               # Massas de dados e modelos TypeScript
+│   │   ├── task.model.ts       # Interface TypeScript da entidade Task
+│   │   └── tasks.json          # Payloads e massas para cenários de teste
+│   ├── support/                # Utilitários, Helpers e Page Objects
+│   │   ├── helpers.ts          # Helpers de API (deleteTaskByHelper, postTask)
+│   │   └── pages/tasks/index.ts # Page Object da página de tarefas
+│   ├── home.spec.ts            # Teste de disponibilidade do WebApp
+│   └── tasks.spec.ts           # Cenários de cadastro, duplicidade, campos obrigatórios, toggle e exclusão
+├── .env.example                # Modelo de variáveis de ambiente
+├── playwright.config.ts        # Configuração global do Playwright (browsers, timeouts, reporters)
+├── tsconfig.json               # Configurações do compilador TypeScript
+├── Insomnia_markL.json         # Workspace exportado do Insomnia para testes manuais de API
+├── Guia_de_Estudos_udemy_playwright_express.pdf # Guia complementar de estudos do curso
+└── package.json                # Dependências raiz e scripts de execução
 ```
+
+---
+
+## 🧪 Cenários de Teste Automatizados
+
+| Especificação | Cenário | Descrição |
+| :--- | :--- | :--- |
+| `home.spec.ts` | **Webapp online** | Valida se a aplicação web está acessível e com o título esperado. |
+| `tasks.spec.ts` | **Cadastro com sucesso** | Cadastra uma nova tarefa na UI e valida a exibição no grid. |
+| `tasks.spec.ts` | **Validação de duplicidade** | Garante que o sistema exibe alerta ao tentar cadastrar tarefa com nome já existente. |
+| `tasks.spec.ts` | **Campo obrigatório** | Valida a mensagem nativa de validação HTML5 quando o campo de tarefa está vazio. |
+| `tasks.spec.ts` | **Concluir tarefa (Toggle)** | Cria a tarefa via API, marca como concluída na UI e valida o estilo riscado. |
+| `tasks.spec.ts` | **Exclusão de tarefa** | Cria a tarefa via API, clica no botão de exclusão na UI e valida a remoção da lista. |
 
 ---
 
 ## ⚙️ Pré-requisitos
 
-Antes de começar, garante que tens instalado na tua máquina:
-
-- **Node.js**: versão `v18.x` ou superior (testado com Node.js v24)
-- **npm**: gerenciador de pacotes padrão do Node.js
+Certifique-se de possuir em seu ambiente:
+- **Node.js**: `v18.x` ou superior (testado também no Node.js v24+)
+- **npm** ou **yarn**: Gerenciador de pacotes do Node.js
+- **Navegadores do Playwright**: Instalados automaticamente via CLI
 
 ---
 
 ## 🚀 Guia de Instalação e Execução
 
-Siga os passos abaixo para configurar e rodar o projeto localmente:
-
-### 1. Clonar o repositório & Acessar o diretório
+### 1. Clonar o Repositório & Configurar o Ambiente
 
 ```bash
-cd /Users/lfernandobra/Documents/GitHub/udemy-playwright-express
+# Clone o repositório
+git clone https://github.com/lfernandobra/udemy-playwright-express.git
+cd udemy-playwright-express
+
+# Crie o arquivo .env a partir do exemplo
+cp .env.example .env
+```
+
+Conteúdo padrão do `.env`:
+```env
+BASE_URL=http://localhost:8080
+BASE_API=http://localhost:3333
 ```
 
 ---
 
-### 2. Configurar e Iniciar a API (Backend)
+### 2. Iniciar a API (Backend)
 
-A API gerencia a persistência das tarefas utilizando SQLite e TypeORM na porta `3333`.
+Em um terminal:
 
-1. Acesse o diretório da API:
+```bash
+cd app/api
 
-   ```bash
-   cd app/api
-   ```
+# Instalar dependências da API
+npm install
 
-2. Instale as dependências:
+# Inicializar o banco de dados SQLite (executa migrations)
+npm run db:init
 
-   ```bash
-   npm install
-   ```
-
-3. Inicialize o banco de dados SQLite (executa as migrações do TypeORM):
-
-   ```bash
-   npm run db:init
-   ```
-
-4. Inicie o servidor da API em modo de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-   > A API estará rodando em: `http://localhost:3333`
+# Iniciar o servidor da API
+npm run dev
+```
+> 📍 **API Backend**: `http://localhost:3333`
 
 ---
 
-### 3. Configurar e Iniciar a Interface Web (Frontend)
+### 3. Iniciar a Interface Web (Frontend)
 
-O Frontend é a interface gráfica onde as tarefas são visualizadas e gerenciadas na porta `8080`.
+Em um **segundo terminal**:
 
-1. Em um novo terminal, acesse o diretório web:
+```bash
+cd app/web
 
-   ```bash
-   cd app/web
-   ```
+# Instalar dependências do Web
+npm install
 
-2. Instale as dependências:
-
-   ```bash
-   npm install
-   ```
-
-3. Inicie o servidor web:
-   ```bash
-   npm run dev
-   ```
-   > O Frontend estará acessível em: `http://localhost:8080`
+# Iniciar o servidor HTTP
+npm run dev
+```
+> 📍 **Frontend Web**: `http://localhost:8080`
 
 ---
 
-### 4. Configurar e Executar os Testes Automatizados (Playwright)
+### 4. Instalar e Executar os Testes (Playwright)
 
-Com a API e o Web rodando, abra um novo terminal na **raiz do projeto** para rodar a suíte de testes E2E.
+Em um **terceiro terminal** na raiz do projeto:
 
-1. Instale as dependências da raiz (Playwright):
+```bash
+# Instalar as dependências da raiz
+npm install
 
-   ```bash
-   npm install
-   ```
+# Instalar os binários dos navegadores do Playwright (primeira vez)
+npx playwright install
+```
 
-2. Instale os navegadores do Playwright (Chromium, Firefox, WebKit):
+#### Comandos de Execução dos Testes:
 
-   ```bash
-   npx playwright install
-   ```
+```bash
+# Executa todos os testes em modo headless (Chromium, Firefox, WebKit, Mobile)
+npm test
 
-3. Executar os testes em modo headless:
+# Executa com a interface gráfica interativa do Playwright (UI Mode - Recomendado)
+npm run test:ui
 
-   ```bash
-   npx playwright test
-   ```
+# Executa com o navegador visível (Headed Mode)
+npm run test:headed
 
-4. Executar os testes com a Interface Gráfica interativa do Playwright (UI Mode):
+# Executa em modo Debug passo a passo (Playwright Inspector)
+npm run test:debug
 
-   ```bash
-   npx playwright test --ui
-   ```
-
-5. Visualizar o relatório de testes (HTML Report):
-   ```bash
-   npx playwright show-report
-   ```
+# Abre o relatório HTML detalhado da última execução
+npm run test:report
+```
 
 ---
 
-## 🛠️ Scripts Úteis
+## 🛠️ Scripts NPM Disponíveis
+
+### Raiz do Projeto (Testes E2E)
+| Script | Comando | Descrição |
+| :--- | :--- | :--- |
+| `npm test` | `playwright test` | Executa todos os testes E2E em modo headless. |
+| `npm run test:ui` | `playwright test --ui` | Abre a interface interativa do Playwright para execução e depuração visual. |
+| `npm run test:headed` | `playwright test --headed` | Executa os testes abrindo as janelas dos navegadores. |
+| `npm run test:debug` | `playwright test --debug` | Executa no modo debug com o Playwright Inspector. |
+| `npm run test:report` | `playwright show-report` | Abre o relatório interativo HTML da última execução. |
 
 ### API (`app/api`)
-
-- `npm run dev` - Inicia a API na porta 3333.
-- `npm run db:init` - Roda as migrations do banco de dados SQLite.
-- `npm run db:drop` - Apaga/reseta o schema do banco de dados.
+| Script | Comando | Descrição |
+| :--- | :--- | :--- |
+| `npm run dev` | `ts-node-dev src/server.ts` | Inicia a API com recarregamento automático (hot-reload). |
+| `npm run db:init` | `typeorm migration:run` | Executa as migrações e cria o banco SQLite local. |
+| `npm run db:drop` | `typeorm schema:drop` | Limpa todo o schema e dados do banco SQLite. |
 
 ### Web (`app/web`)
-
-- `npm run dev` ou `npm start` - Servidor HTTP estático na porta 8080.
+| Script | Comando | Descrição |
+| :--- | :--- | :--- |
+| `npm run dev` | `http-server . -p 8080` | Servidor web estático na porta 8080 com CORS habilitado. |
 
 ---
 
-## 💡 Observações & Solução de Problemas
+## 💡 Solução de Problemas & Dicas
 
-- **Erro de Bindings do `better-sqlite3`**: Se ao rodar `npm run db:init` você receber um erro referente ao `better-sqlite3`, certifique-se de que instalou a versão compatível com a versão do Node.js em uso rodando `npm install better-sqlite3@latest` na pasta `app/api`.
+- **Erro de compilação do `better-sqlite3`**: Em versões recentes do Node.js (v20+ / v22+ / v24+), caso o `npm run db:init` apresente erro de bindings nativos, execute na pasta `app/api`:
+  ```bash
+  cd app/api && npm install better-sqlite3@latest
+  ```
+- **Portas em uso (3333 ou 8080)**: Certifique-se de que nenhuma outra aplicação está ocupando as portas 3333 ou 8080 antes de iniciar os servidores.
+- **Silenciar avisos de injeção de ambiente (`dotenv`/`dotenvx`)**: A configuração do `playwright.config.ts` já possui `quiet: true` habilitado para manter os logs de teste limpos durante a execução dos workers paralelos.
 
-## Modo debug
+---
 
-- `yarn playwright test --debug` executa no modo debug
+## 📚 Recursos Adicionais
+
+- **[Insomnia_markL.json](./Insomnia_markL.json)**: Coleção pronta para importar no Insomnia e testar os endpoints da API (`POST /tasks`, `GET /tasks`, `PUT /tasks/:id`, `DELETE /tasks/:id`).
+- **[Guia_de_Estudos_udemy_playwright_express.pdf](./Guia_de_Estudos_udemy_playwright_express.pdf)**: Guia completo em PDF com resumos e conceitos fundamentais do curso.
+
+---
+
+## 👨‍💻 Autor
+
+Desenvolvido por **Luiz Fernando Braga** durante a formação em automação de testes com Playwright.
