@@ -208,4 +208,4 @@ npm run test:report
 
 ## 👨‍💻 Autor
 
-Desenvolvido por **Luiz Fernando Braga** durante a formação em automação de testes com Playwright.
+Desenvolvido por **Luis Fernando Brandão durante a formação em automação de testes com Playwright.
