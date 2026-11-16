@@ -75,7 +75,7 @@ O projeto combina **Page Object Model (POM)**, preparação híbrida de massa vi
 ## 4. Instalação e Execução Local
 
 ### Pré-requisitos
-* Node.js `>= 18.x`
+* Node.js `>= 22.x` (`better-sqlite3@13` requer Node 22+)
 * Navegadores do Playwright (`npx playwright install`)
 
 ### 1. Configurar ambiente e dependências
