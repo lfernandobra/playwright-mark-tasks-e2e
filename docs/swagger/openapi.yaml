@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: Mark Tasks API
+  version: 1.0.0
+  description: |
+    Contract specification for the Mark Tasks Express + TypeORM + SQLite backend (`app/api`).
+servers:
+  - url: http://localhost:3333
+    description: Local API server
+
+tags:
+  - name: Tasks
+    description: Task management endpoints
+  - name: Helpers
+    description: Test state setup/teardown endpoints (disabled when NODE_ENV=production)
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "dd90cf90-a3f3-4dbf-af12-66e666ac9012"
+        name:
+          type: string
+          example: "Ler um livro de Typescript"
+        is_done:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-08-24T17:44:17.000Z"
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - name
+        - is_done
+      properties:
+        name:
+          type: string
+          example: "Ler um livro de Typescript"
+        is_done:
+          type: boolean
+          enum: [false]
+          description: New tasks must always start with is_done set to false
+          example: false
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - is_done
+      properties:
+        is_done:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Task already exists!"
+
+paths:
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List all tasks ordered by created_at ASC
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created (empty response body)
+        "400":
+          description: Validation error or duplicate task name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                duplicate:
+                  value:
+                    message: "Task already exists!"
+                completedOnCreate:
+                  value:
+                    message:
+                      errors:
+                        - "The task cannot be registered as completed."
+
+  /tasks/{id}:
+    put:
+      tags:
+        - Tasks
+      summary: Toggle or update task completion status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Task updated (see BUG-001 regarding pre-update payload returned)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                message: "Task not found!"
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task by UUID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Task deleted
+
+  /helper/tasks/{task_name}:
+    delete:
+      tags:
+        - Helpers
+      summary: Delete tasks matching task_name (test helper; disabled in production)
+      parameters:
+        - in: path
+          name: task_name
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Matching tasks removed
+
+  /helper/tasks:
+    delete:
+      tags:
+        - Helpers
+      summary: Delete tasks matching name in JSON body (test helper; disabled in production)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        "204":
+          description: Matching tasks removed

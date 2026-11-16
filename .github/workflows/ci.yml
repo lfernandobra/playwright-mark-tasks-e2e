@@ -1,0 +1,100 @@
+name: Mark Tasks E2E CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e-multi-browser:
+    name: Playwright E2E (Desktop & Mobile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      BASE_URL: http://localhost:8080
+      BASE_API: http://localhost:3333
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install root test dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Install API and Web app dependencies
+        run: |
+          npm --prefix app/api ci
+          npm --prefix app/web install
+
+      - name: Initialize SQLite database and start backend API
+        run: |
+          npm --prefix app/api run db:init
+          NODE_ENV=development npm --prefix app/api start > /tmp/mark-api.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf "${{ env.BASE_API }}/tasks" >/dev/null; then
+              echo "Mark Tasks API is ready."
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              cat /tmp/mark-api.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Start Web frontend server
+        run: |
+          npm --prefix app/web start > /tmp/mark-web.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf "${{ env.BASE_URL }}" >/dev/null; then
+              echo "Mark Tasks Web is ready."
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              cat /tmp/mark-web.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Prepare .env and validate Postman collection
+        run: |
+          cp .env.example .env
+          node -e "
+            const fs = require('fs');
+            JSON.parse(fs.readFileSync('docs/postman/MarkTasks.postman_collection.json', 'utf8'));
+            JSON.parse(fs.readFileSync('docs/postman/MarkTasks.local.postman_environment.json', 'utf8'));
+          "
+
+      - name: Execute Playwright multi-browser E2E suite
+        run: npm test
+        # CI=true triggers workers: 1 in playwright.config.ts, preventing SQLite
+        # write/data races across the 5 browser/mobile projects.
+
+      - name: Dump app server logs on failure
+        if: failure()
+        run: |
+          echo "=== API Log ==="
+          cat /tmp/mark-api.log || true
+          echo "=== Web Log ==="
+          cat /tmp/mark-web.log || true
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

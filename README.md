@@ -1,211 +1,144 @@
-# 📝 Mark Tasks — Testes E2E com Playwright & TypeScript
+# Mark Tasks — Automação E2E Web & API com Playwright e TypeScript
 
-[![Playwright Tests](https://img.shields.io/badge/Playwright-v1.62.1-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-v18%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Mark Tasks E2E CI](https://github.com/lfernandobra/playwright-mark-tasks-e2e/actions/workflows/ci.yml/badge.svg)](https://github.com/lfernandobra/playwright-mark-tasks-e2e/actions/workflows/ci.yml)
+[![Playwright](https://img.shields.io/badge/Playwright-v1.62.1-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0.3-6BA539?style=flat-square&logo=openapiinitiative&logoColor=white)](docs/swagger/openapi.yaml)
+[![Postman](https://img.shields.io/badge/Postman-FF6C37?style=flat-square&logo=postman&logoColor=white)](docs/postman/MarkTasks.postman_collection.json)
 
-Repositório com uma aplicação completa de gerenciamento de tarefas (**Mark Tasks**) e uma suíte profissional de testes automatizados **End-to-End (E2E)** construída com **Playwright** e **TypeScript**, aplicando padrões arquiteturais avançados para automação de testes de alta confiabilidade.
+Suíte de testes automatizados **End-to-End (E2E)** para a aplicação de gerenciamento de tarefas **Mark Tasks** (Frontend Web + API REST Express/TypeORM/SQLite), construída com **Playwright** e **TypeScript**.
 
----
-
-## 🎯 Destaques e Boas Práticas da Automação
-
-- **Page Object Model (POM)**: Estrutura desacoplada onde elementos e ações de tela ficam centralizados na classe `TasksPage`, aumentando a manutenibilidade e legibilidade dos testes.
-- **Testes Híbridos (API + UI)**: Utilização do `APIRequestContext` do Playwright para preparar o estado do banco (exclusão e cadastro prévio de tarefas via API) antes da interação na interface web, garantindo independência e alta velocidade de execução.
-- **Fixtures & Dados Tipados**: Separação clara de massa de dados em JSON (`tasks.json`) e tipagem com contratos TypeScript (`TaskModel`).
-- **Execução Paralela Multi-Browser & Responsiva**: Testes executados simultaneamente em navegadores desktop (**Chromium, Firefox, WebKit/Safari**) e emuladores mobile (**Mobile Chrome / Pixel 5**, **Mobile Safari / iPhone 12**).
-- **Observabilidade Completa**: Captura automática de screenshots em caso de falhas (`only-on-failure`), gravação de traces para debug (`on-first-retry`) e relatórios interativos em HTML.
-- **Gerenciamento de Ambientes**: Variáveis de ambiente centralizadas com `dotenv` e URLs parametrizáveis.
+O projeto combina **Page Object Model (POM)**, preparação híbrida de massa via API (`APIRequestContext`), matriz **multi-browser desktop/mobile** (`30` execuções por suíte), especificações **BDD em Gherkin**, contrato **OpenAPI 3.0**, coleção **Postman** e execução contínua via **GitHub Actions**.
 
 ---
 
-## 📁 Estrutura do Repositório
+## 1. Estratégia e Artefatos de QA
+
+| Artefato | Objetivo | Caminho |
+| :--- | :--- | :--- |
+| **Plano de Testes** | Escopo, decisão híbrida API+UI, controle de concorrência SQLite e rastreabilidade | [`docs/qa/TEST_PLAN.md`](docs/qa/TEST_PLAN.md) |
+| **Casos de Teste** | Inventário dos `6` fluxos E2E (`30` execuções cross-browser) + `7` contratos de API | [`docs/qa/TEST_CASES.md`](docs/qa/TEST_CASES.md) |
+| **Cenários BDD (Gherkin)** | Critérios de aceite em sintaxe `Given / When / Then` | [`specs/features/tasks.feature`](specs/features/tasks.feature) |
+| **Relatório de Bug** | Evidência de payload desatualizado retornado pelo `PUT /tasks/:id` | [`BUG-001`](docs/qa/bug-reports/BUG-001-stale-payload-on-task-update.md) |
+| **OpenAPI / Swagger** | Especificação 3.0.3 dos endpoints `/tasks` e `/helper/tasks` | [`docs/swagger/openapi.yaml`](docs/swagger/openapi.yaml) |
+| **Postman Collection** | Coleção v2.1 com asserções `pm.test` e captura automática de `taskId` | [`docs/postman/MarkTasks.postman_collection.json`](docs/postman/MarkTasks.postman_collection.json) |
+
+---
+
+## 2. Arquitetura e Padrões Aplicados
+
+* **Page Object Model (`TasksPage`):** Elementos, localizadores CSS/XPath e asserções de tela encapsulados em [`tests/support/pages/tasks/index.ts`](tests/support/pages/tasks/index.ts).
+* **Setup Híbrido via API (`APIRequestContext`):** Os helpers [`deleteTaskByHelper` e `postTask`](tests/support/helpers.ts) preparam e limpam o estado do SQLite diretamente via HTTP (`/helper/tasks/:task_name` e `POST /tasks`) antes da interação na interface, mantendo os testes independentes e rápidos.
+* **Dados Tipados:** Massa isolada em [`tests/fixtures/tasks.json`](tests/fixtures/tasks.json) com contrato [`TaskModel`](tests/fixtures/task.model.ts).
+* **Cobertura Cross-Browser & Responsiva:** Configurada em [`playwright.config.ts`](playwright.config.ts) para `chromium`, `firefox`, `webkit`, `Mobile Chrome` (`Pixel 5`) e `Mobile Safari` (`iPhone 12`).
+* **Isolamento em CI:** Como os 5 projetos compartilham o mesmo arquivo `database.sqlite` e massa fixa, `workers: 1` em `CI=true` evita condições de corrida de escrita.
+
+---
+
+## 3. Estrutura do Repositório
 
 ```text
-udemy-playwright-express/
+.
+├── .github/workflows/
+│   └── ci.yml                          # Pipeline CI: SQLite init + API + Web + Playwright (5 projetos)
 ├── app/
-│   ├── api/                    # Backend Node.js (Express + TypeORM + SQLite) - Porta 3333
-│   │   ├── src/                # Controllers, Models, Migrations e Servidor
-│   │   └── ormconfig.json      # Configuração do banco de dados SQLite
-│   └── web/                    # Frontend Web (HTML5/CSS3/Vanilla JS) - Porta 8080
-│       ├── assets/             # Estilos, scripts e imagens da interface
-│       └── index.html          # Página principal da aplicação
-├── tests/                      # Suíte de Testes Automatizados E2E
-│   ├── fixtures/               # Massas de dados e modelos TypeScript
-│   │   ├── task.model.ts       # Interface TypeScript da entidade Task
-│   │   └── tasks.json          # Payloads e massas para cenários de teste
-│   ├── support/                # Utilitários, Helpers e Page Objects
-│   │   ├── helpers.ts          # Helpers de API (deleteTaskByHelper, postTask)
-│   │   └── pages/tasks/index.ts # Page Object da página de tarefas
-│   ├── home.spec.ts            # Teste de disponibilidade do WebApp
-│   └── tasks.spec.ts           # Cenários de cadastro, duplicidade, campos obrigatórios, toggle e exclusão
-├── .env.example                # Modelo de variáveis de ambiente
-├── playwright.config.ts        # Configuração global do Playwright (browsers, timeouts, reporters)
-├── tsconfig.json               # Configurações do compilador TypeScript
-├── Insomnia_markL.json         # Workspace exportado do Insomnia para testes manuais de API
-├── Guia_de_Estudos_udemy_playwright_express.pdf # Guia complementar de estudos do curso
-└── package.json                # Dependências raiz e scripts de execução
+│   ├── api/                            # Backend Node.js (Express + TypeORM + SQLite) - porta 3333
+│   └── web/                            # Frontend Web estático - porta 8080
+├── docs/
+│   ├── postman/                        # Collection v2.1 e Environment local do Postman
+│   ├── qa/
+│   │   ├── bug-reports/                # Exemplo real de bug report identificado na API
+│   │   ├── TEST_CASES.md               # Matriz de casos UI e API
+│   │   └── TEST_PLAN.md                # Plano de testes e decisões arquiteturais
+│   └── swagger/
+│       └── openapi.yaml                # Contrato OpenAPI 3.0.3
+├── specs/features/
+│   └── tasks.feature                   # Especificação BDD em Gherkin
+├── tests/
+│   ├── fixtures/
+│   │   ├── task.model.ts               # Tipagem TypeScript da entidade Task
+│   │   └── tasks.json                  # Massa de dados dos cenários
+│   ├── support/
+│   │   ├── helpers.ts                  # Helpers HTTP (APIRequestContext)
+│   │   └── pages/tasks/index.ts        # Page Object TasksPage
+│   ├── home.spec.ts                    # Disponibilidade da aplicação web
+│   └── tasks.spec.ts                   # Cadastro, duplicidade, validação HTML5, toggle e exclusão
+├── .env.example                        # Template de variáveis de ambiente
+├── Insomnia_markL.json                 # Workspace original do Insomnia
+├── playwright.config.ts                # Configuração dos 5 projetos, trace e screenshot on-failure
+└── package.json
 ```
 
 ---
 
-## 🧪 Cenários de Teste Automatizados
+## 4. Instalação e Execução Local
 
-| Especificação | Cenário | Descrição |
-| :--- | :--- | :--- |
-| `home.spec.ts` | **Webapp online** | Valida se a aplicação web está acessível e com o título esperado. |
-| `tasks.spec.ts` | **Cadastro com sucesso** | Cadastra uma nova tarefa na UI e valida a exibição no grid. |
-| `tasks.spec.ts` | **Validação de duplicidade** | Garante que o sistema exibe alerta ao tentar cadastrar tarefa com nome já existente. |
-| `tasks.spec.ts` | **Campo obrigatório** | Valida a mensagem nativa de validação HTML5 quando o campo de tarefa está vazio. |
-| `tasks.spec.ts` | **Concluir tarefa (Toggle)** | Cria a tarefa via API, marca como concluída na UI e valida o estilo riscado. |
-| `tasks.spec.ts` | **Exclusão de tarefa** | Cria a tarefa via API, clica no botão de exclusão na UI e valida a remoção da lista. |
+### Pré-requisitos
+* Node.js `>= 18.x`
+* Navegadores do Playwright (`npx playwright install`)
 
----
-
-## ⚙️ Pré-requisitos
-
-Certifique-se de possuir em seu ambiente:
-- **Node.js**: `v18.x` ou superior (testado também no Node.js v24+)
-- **npm** ou **yarn**: Gerenciador de pacotes do Node.js
-- **Navegadores do Playwright**: Instalados automaticamente via CLI
-
----
-
-## 🚀 Guia de Instalação e Execução
-
-### 1. Clonar o Repositório & Configurar o Ambiente
+### 1. Configurar ambiente e dependências
 
 ```bash
-# Clone o repositório
-git clone https://github.com/lfernandobra/udemy-playwright-express.git
-cd udemy-playwright-express
-
-# Crie o arquivo .env a partir do exemplo
 cp .env.example .env
-```
-
-Conteúdo padrão do `.env`:
-```env
-BASE_URL=http://localhost:8080
-BASE_API=http://localhost:3333
-```
-
----
-
-### 2. Iniciar a API (Backend)
-
-Em um terminal:
-
-```bash
-cd app/api
-
-# Instalar dependências da API
-npm install
-
-# Inicializar o banco de dados SQLite (executa migrations)
-npm run db:init
-
-# Iniciar o servidor da API
-npm run dev
-```
-> 📍 **API Backend**: `http://localhost:3333`
-
----
-
-### 3. Iniciar a Interface Web (Frontend)
-
-Em um **segundo terminal**:
-
-```bash
-cd app/web
-
-# Instalar dependências do Web
-npm install
-
-# Iniciar o servidor HTTP
-npm run dev
-```
-> 📍 **Frontend Web**: `http://localhost:8080`
-
----
-
-### 4. Instalar e Executar os Testes (Playwright)
-
-Em um **terceiro terminal** na raiz do projeto:
-
-```bash
-# Instalar as dependências da raiz
-npm install
-
-# Instalar os binários dos navegadores do Playwright (primeira vez)
+npm ci
 npx playwright install
 ```
 
-#### Comandos de Execução dos Testes:
+### 2. Iniciar Backend (`app/api` — porta `3333`)
 
 ```bash
-# Executa todos os testes em modo headless (Chromium, Firefox, WebKit, Mobile)
+npm --prefix app/api ci
+npm --prefix app/api run db:init
+NODE_ENV=development npm --prefix app/api start
+```
+
+> `NODE_ENV=development` habilita as rotas `/helper/tasks` usadas para limpeza determinística de massa antes dos testes. Em caso de incompatibilidade de binário nativo do `better-sqlite3` em versões mais novas do Node.js, execute `npm --prefix app/api install better-sqlite3@latest`.
+
+### 3. Iniciar Frontend (`app/web` — porta `8080`)
+
+Em um segundo terminal:
+
+```bash
+npm --prefix app/web install
+npm --prefix app/web start
+```
+
+### 4. Executar a suíte Playwright
+
+Em um terceiro terminal:
+
+```bash
+# Todos os testes em modo headless (30 execuções nos 5 projetos)
 npm test
 
-# Executa com a interface gráfica interativa do Playwright (UI Mode - Recomendado)
+# Modo interativo (UI Mode)
 npm run test:ui
 
-# Executa com o navegador visível (Headed Mode)
+# Navegador visível (Headed Mode)
 npm run test:headed
 
-# Executa em modo Debug passo a passo (Playwright Inspector)
-npm run test:debug
-
-# Abre o relatório HTML detalhado da última execução
+# Abrir relatório HTML
 npm run test:report
 ```
 
 ---
 
-## 🛠️ Scripts NPM Disponíveis
+## 5. Pipeline de CI/CD
 
-### Raiz do Projeto (Testes E2E)
-| Script | Comando | Descrição |
-| :--- | :--- | :--- |
-| `npm test` | `playwright test` | Executa todos os testes E2E em modo headless. |
-| `npm run test:ui` | `playwright test --ui` | Abre a interface interativa do Playwright para execução e depuração visual. |
-| `npm run test:headed` | `playwright test --headed` | Executa os testes abrindo as janelas dos navegadores. |
-| `npm run test:debug` | `playwright test --debug` | Executa no modo debug com o Playwright Inspector. |
-| `npm run test:report` | `playwright show-report` | Abre o relatório interativo HTML da última execução. |
-
-### API (`app/api`)
-| Script | Comando | Descrição |
-| :--- | :--- | :--- |
-| `npm run dev` | `ts-node-dev src/server.ts` | Inicia a API com recarregamento automático (hot-reload). |
-| `npm run db:init` | `typeorm migration:run` | Executa as migrações e cria o banco SQLite local. |
-| `npm run db:drop` | `typeorm schema:drop` | Limpa todo o schema e dados do banco SQLite. |
-
-### Web (`app/web`)
-| Script | Comando | Descrição |
-| :--- | :--- | :--- |
-| `npm run dev` | `http-server . -p 8080` | Servidor web estático na porta 8080 com CORS habilitado. |
+O workflow [`ci.yml`](.github/workflows/ci.yml) é disparado em `push` e `pull_request` para `main`:
+1. Instala dependências da raiz, `app/api` e `app/web`, além dos binários `chromium`, `firefox` e `webkit`.
+2. Inicializa o banco SQLite (`db:init`), inicia o backend (`NODE_ENV=development`) e o servidor web (`http-server`).
+3. Valida a integridade JSON dos arquivos Postman e executa os `30` testes E2E sequencialmente.
+4. Salva o diretório `playwright-report/` como artefato por 14 dias.
 
 ---
 
-## 💡 Solução de Problemas & Dicas
+## 6. Autor
 
-- **Erro de compilação do `better-sqlite3`**: Em versões recentes do Node.js (v20+ / v22+ / v24+), caso o `npm run db:init` apresente erro de bindings nativos, execute na pasta `app/api`:
-  ```bash
-  cd app/api && npm install better-sqlite3@latest
-  ```
-- **Portas em uso (3333 ou 8080)**: Certifique-se de que nenhuma outra aplicação está ocupando as portas 3333 ou 8080 antes de iniciar os servidores.
-- **Silenciar avisos de injeção de ambiente (`dotenv`/`dotenvx`)**: A configuração do `playwright.config.ts` já possui `quiet: true` habilitado para manter os logs de teste limpos durante a execução dos workers paralelos.
-
----
-
-## 📚 Recursos Adicionais
-
-- **[Insomnia_markL.json](./Insomnia_markL.json)**: Coleção pronta para importar no Insomnia e testar os endpoints da API (`POST /tasks`, `GET /tasks`, `PUT /tasks/:id`, `DELETE /tasks/:id`).
-- **[Guia_de_Estudos_udemy_playwright_express.pdf](./Guia_de_Estudos_udemy_playwright_express.pdf)**: Guia completo em PDF com resumos e conceitos fundamentais do curso.
-
----
-
-## 👨‍💻 Autor
-
-Desenvolvido por **Luis Fernando Brandão durante a formação em automação de testes com Playwright.
+**Luis Fernando Brandão**  
+QA Automation Engineer  
+* [LinkedIn](https://linkedin.com/in/lfernandobra)  
+* [GitHub](https://github.com/lfernandobra)  
+* lfernandobra@gmail.com

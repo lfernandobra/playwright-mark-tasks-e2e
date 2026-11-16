@@ -1,0 +1,359 @@
+{
+  "info": {
+    "_postman_id": "4b9e2d10-8a73-4f19-b95e-31a4b6c7d8e9",
+    "name": "Mark Tasks API - QA Validation",
+    "description": "Postman v2.1 collection for the Mark Tasks Express/TypeORM/SQLite backend. Supports sequential Collection Runner execution.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseApi",
+      "value": "http://localhost:3333",
+      "type": "string"
+    },
+    {
+      "key": "taskName",
+      "value": "QA Automation Task",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Tasks CRUD",
+      "item": [
+        {
+          "name": "POST /tasks - Create New Task",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const uniqueTask = `Task_${Date.now()}`;",
+                  "pm.collectionVariables.set('taskName', uniqueTask);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{taskName}}\",\n  \"is_done\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseApi}}/tasks",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /tasks - Reject Duplicate Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Returns duplicate task message', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql('Task already exists!');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{taskName}}\",\n  \"is_done\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseApi}}/tasks",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /tasks - Reject Already Completed Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Rejects registration with is_done=true', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(JSON.stringify(json)).to.include('The task cannot be registered as completed.');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Completed Task\",\n  \"is_done\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseApi}}/tasks",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /tasks - List Tasks & Capture Created ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns array and locates newly created task', function () {",
+                  "    const list = pm.response.json();",
+                  "    pm.expect(list).to.be.an('array');",
+                  "    const targetName = pm.collectionVariables.get('taskName');",
+                  "    const found = list.find((t) => t.name === targetName);",
+                  "    pm.expect(found).to.be.an('object');",
+                  "    pm.expect(found).to.have.property('id');",
+                  "    pm.collectionVariables.set('taskId', found.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseApi}}/tasks",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /tasks/:id - Toggle Task Completion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response references updated task ID', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('taskId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_done\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseApi}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /tasks/:id - Non-Existent Task (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Returns Task not found message', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message).to.eql('Task not found!');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_done\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseApi}}/tasks/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /tasks/:id - Remove Task by UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseApi}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Helpers (Non-Production)",
+      "item": [
+        {
+          "name": "DELETE /helper/tasks/:task_name - Cleanup Task by Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseApi}}/helper/tasks/{{taskName}}",
+              "host": [
+                "{{baseApi}}"
+              ],
+              "path": [
+                "helper",
+                "tasks",
+                "{{taskName}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
